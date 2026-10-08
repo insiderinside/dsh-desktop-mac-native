@@ -1,16 +1,16 @@
-# ARCHITECTURE.md — Arsitektur Sistem DSH Desktop macOS
+# ARCHITECTURE.md — System Architecture for DSH Desktop macOS
 
-Dokumentasi arsitektur sistem native shell macOS untuk **DeepSeek Harness (DSH)**.
+System architecture documentation for the native macOS desktop shell of **DeepSeek Harness (DSH)**.
 
 ---
 
-## 1. Ikhtisar Arsitektur (High-Level Architecture)
+## 1. High-Level Architecture Overview
 
-`dsh-desktop-macos` mengadopsi model **Hybrid Host-Client**:
-- **Host Layer (Native AppKit/Swift):** Bertanggung jawab atas inisialisasi lifecycle aplikasi macOS, port probe, manajemen window, menu bar, system bridge, dan integrasi OS native (Terminal, Finder, Notification, Global Hotkey).
-- **Embedded Web Client Layer (WebKit / WKWebView):** Menampilkan antarmuka DeepSeek Harness web yang berjalan di localhost (`http://127.0.0.1:3080`).
+`dsh-desktop-macos` adopts a **Hybrid Host-Client** architectural pattern:
+- **Host Layer (Native AppKit/Swift):** Manages application lifecycle, TCP socket probing, window management, status bar companion, native notifications, global hotkeys, and system bridges (Terminal, Finder).
+- **Embedded Web Client Layer (WebKit / WKWebView):** Renders the DeepSeek Harness web interface running on localhost (`http://127.0.0.1:3080`).
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                       macOS System                          │
 │   (AppKit Event Loop, NotificationCenter, NSWorkspace)     │
@@ -23,7 +23,7 @@ Dokumentasi arsitektur sistem native shell macOS untuk **DeepSeek Harness (DSH)*
                 │
     ┌───────────▼──────────────┐
     │  MainWindowController    │
-    │  (NSWindow, Tabbing)     │
+    │  (NSWindow, Tabs)        │
     └───────────┬──────────────┘
                 │
     ┌───────────▼─────────────────────────────────────────────┐
@@ -40,109 +40,109 @@ Dokumentasi arsitektur sistem native shell macOS untuk **DeepSeek Harness (DSH)*
     ┌──────────────────────────▼──────────────────────────────┐
     │                 DSHDesktopCore                          │
     │  - PortProbe (TCP 3080 Polling via NWConnection)        │
-    │  - DshLocator (Deteksi Path Binary DSH di macOS)        │
+    │  - DshLocator (CLI Binary Path Discovery)               │
     │  - DshProcessSupervisor (Lifecycle Management)          │
     │  - DshAuthSigner (Cookie & Session Signing)             │
     │  - HealthChecker (Warmup & HTTP Verification)           │
     │  - NotificationManager (UNUserNotificationCenter)       │
-    │  - PluginLogStore (In-Memory Ring Buffer 1000 Baris)    │
+    │  - PluginLogStore (In-Memory Ring Buffer, 1000 items)   │
     └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 2. Struktur Paket & Target SPM (Swift Package Manager)
+## 2. Package Structure & SPM Targets
 
-Proyek didefinisikan dalam `Package.swift` dengan 4 target:
+The project is structured in `Package.swift` across four distinct targets:
 
 ### A. `DSHDesktopCore` (Framework / Library)
-Modul utilitas independen sistem dan networking:
-1. **`PortProbe.swift`**: Polling ketersediaan TCP port target menggunakan `Network.framework` (`NWConnection`). Mendeteksi kesiapan server web secara asinkron tanpa memblokir thread UI.
-2. **`DshLocator.swift`**: Menemukan lokasi binary CLI `dsh` pada path instalasi standar (`/usr/local/bin/dsh`, `~/.local/bin/dsh`, dll).
-3. **`DshProcessSupervisor.swift`**: Mengelola spawning proses sub-server `dsh web --profile webplugins --port 3080` dan memastikan cleanup proses secara tertib saat aplikasi ditutup.
-4. **`DshAuthSigner.swift`**: Menghasilkan token tanda tangan/cookie autentikasi lokal untuk memvalidasi sesi WebView ke server internal.
-5. **`HealthChecker.swift`**: Memvalidasi respon HTTP sebelum halaman utama dimuat untuk mengeliminasi status stuck "reconnecting".
-6. **`NotificationManager.swift`**: Mengirimkan notifikasi banner sistem native saat agent menyelesaikan giliran percakapan atau background tasks.
-7. **`PluginLogStore.swift`**: Menyimpan entri log JavaScript/WebKit secara thread-safe (`@MainActor`) dengan kapasitas buffer 1.000 log terbaru.
+System utilities, socket networking, and runtime supervision:
+1. **`PortProbe.swift`**: Asynchronously verifies TCP port availability using `Network.framework` (`NWConnection`) without blocking the main UI thread.
+2. **`DshLocator.swift`**: Discovers the local `dsh` CLI binary across standard Unix installation paths (`~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, etc.).
+3. **`DshProcessSupervisor.swift`**: Manages child process spawning for `dsh web --port 3080` and guarantees clean SIGTERM process termination upon application exit.
+4. **`DshAuthSigner.swift`**: Computes local HMAC authentication cookies matching `@deepseek-ai/dsh-client-connection` specifications for authenticated WebView sessions.
+5. **`HealthChecker.swift`**: Polls HTTP status codes prior to initial WebView load to prevent infinite "reconnecting" blank screens.
+6. **`NotificationManager.swift`**: Dispatches system banner alerts via `UserNotifications` when long-running agent tasks complete.
+7. **`PluginLogStore.swift`**: Thread-safe in-memory circular buffer (`@MainActor`) capturing up to 1,000 WebKit console errors and plugin warnings.
 
 ### B. `DSHDesktopUI` (Framework / Library)
-Modul antarmuka AppKit dan WebKit:
+AppKit and WebKit user interface components:
 1. **`MainWindowController.swift`**:
-   - Menangani pembuatan `NSWindow` dengan `fullSizeContentView`.
-   - Konfigurasi window autosave frame (`UserDefaults`) dan auto-maximize saat pertama kali dibuka.
-   - Dukungan native macOS tabbed windows (`NSWindow.tabbingMode = .preferred`).
+   - Manages `NSWindow` with `fullSizeContentView` and transparent titlebar styling.
+   - Restores window size and position from `UserDefaults` with first-launch auto-maximization.
+   - Native macOS window tabbing support (`NSWindow.tabbingMode = .preferred`).
 2. **`WebViewController.swift`**:
-   - Mengelola lifecycle `WKWebView`.
-   - Menginjeksi user scripts: disable spellcheck/autocorrect dan membuat bridge `window.dshNative`, `window.dshDesktopActions`, `window.dshDesktop`.
-   - Menerima event via `WKScriptMessageHandler`:
-     - `openTerminal`: Membuka `Terminal.app` bawaan macOS pada target path.
-     - `revealInFinder`: Menampilkan path di Finder (`NSWorkspace`).
-     - `desktopAction`: Aksi antarmuka khusus desktop.
-     - `pluginLog`: Menangkap console error/warn dari WebKit ke `PluginLogStore`.
-   - Kebijakan cache: `.reloadIgnoringLocalCacheData` dan pembersihan cache selektif pada reload (`Cmd + R`) tanpa menghapus session cookie/localStorage.
+   - Manages `WKWebView` lifecycle and dark mode placeholder backgrounds.
+   - Injects user scripts to disable spellcheck/autocorrect and provisions `window.dshNative`, `window.dshDesktopActions`, and `window.dshDesktop`.
+   - Handles `WKScriptMessageHandler` events:
+     - `openTerminal`: Opens macOS `Terminal.app` at the workspace target path.
+     - `revealInFinder`: Reveals project directory in Finder via `NSWorkspace`.
+     - `desktopAction`: Custom desktop interface actions.
+     - `pluginLog`: Captures uncaught JavaScript errors into `PluginLogStore`.
+   - Cache policy: Purges HTTP cache on reload (`Cmd + R`) while preserving local session cookies and preferences.
 3. **`MenuBarController.swift`**:
-   - Mengelola icon status item di macOS Menu Bar (`NSStatusItem`).
-   - Menyediakan menu cepat: toggle window, switch profil DSH (`~/.dsh/profiles`), buka logs window, dan quit.
+   - Manages macOS status bar item (`NSStatusItem`).
+   - Quick action menu: window toggle, active profile switcher (`~/.dsh/profiles`), log inspector launcher, and quit.
 4. **`PluginLogWindowController.swift`**:
-   - Jendela antarmuka terpisah untuk memantau streaming log JavaScript/WebKit secara real-time (`NSTableView`).
+   - Dedicated floating window for live streaming WebKit JavaScript and plugin error logs (`NSTextView`).
 
 ### C. `DSHDesktop` (Executable Target)
-- **`main.swift`**: Titik masuk runtime program.
+- **`main.swift`**: Application runtime entry point.
 - **`AppDelegate.swift`**:
-   - Inisialisasi `NSApplication`.
-   - Pengaturan menu utama macOS (File, Edit, View, Window, Help).
-   - Registrasi global shortcut (`Option + Space`) untuk toggle jendela utama.
+  - Initializes `NSApplication`.
+  - Configures macOS standard menu bar items (File, Edit, View, Tools, Window, Help).
+  - Registers global shortcut listener (`Option + Space`) to toggle main window visibility.
 
 ### D. `DSHDesktopCheck` (Diagnostic Target)
-- Binary CLI ringan untuk memeriksa kesehatan port 3080, validasi konfigurasi, dan self-check tanpa menampilkan UI.
+- Lightweight CLI tool to verify port probing, locator resolution, supervisor transitions, and log store integrity without rendering any UI.
 
 ---
 
-## 3. Komunikasi & System Bridge
+## 3. Communication & Native System Bridge
 
-### Bridge JavaScript-ke-Swift (WebKit Script Message Handler)
-Runtime web menyuntikkan objek global di `window`:
+### JavaScript-to-Swift Bridge (`WKScriptMessageHandler`)
+The WebKit runtime exposes global bridge helpers on `window`:
 ```javascript
-// Membuka direktori kerja di Terminal native macOS
+// Open workspace directory in native macOS Terminal
 window.dshNative.openTerminal(projectPath);
 
-// Menampilkan file/folder di Finder
+// Reveal project files in Finder
 window.dshNative.revealInFinder(filePath);
 
-// Menjalankan aksi desktop tertentu
-window.dshDesktopActions.openTerminal();
+// Trigger desktop-specific actions
+window.dshDesktopActions.invoke("openTerminal");
 ```
 
-Saat fungsi dipanggil, WebKit mengirimkan pesan melalui channel `window.webkit.messageHandlers.<name>.postMessage(...)` yang langsung diterima oleh `WebViewController.userContentController(_:didReceive:)` di sisi Swift untuk dieksekusi secara native via `NSWorkspace.shared`.
+Calls pass through `window.webkit.messageHandlers.<name>.postMessage(...)` and are intercepted by `WebViewController.userContentController(_:didReceive:)` in Swift to execute native macOS APIs (`NSWorkspace.shared`).
 
 ---
 
-## 4. Lifecycle & Alur Booting
+## 4. Lifecycle & Boot Flow
 
-```
-[1] User Meluncurkan DSHDesktop
+```text
+[1] User launches DSHDesktop
       │
-[2] AppDelegate: Inisialisasi Menu Bar & Menu Utama
+[2] AppDelegate: Configures Menu Bar & Main Window Controllers
       │
-[3] PortProbe: Cek ketersediaan TCP port 3080
-      ├─── Belum Aktif ──► DshProcessSupervisor: Spawn proses "dsh web"
-      │                             │ (Poll sampai port terbuka)
-      └─── Sudah Aktif ─────────────┘
+[3] PortProbe: Checks TCP port 3080 availability
+      ├─── Inactive ──► DshProcessSupervisor: Spawns "dsh web" child process
+      │                       │ (Polls until port opens)
+      └─── Active ────────────┘
       │
-[4] HealthChecker: Lakukan HTTP ping ringan ke port 3080
+[4] HealthChecker: Polls HTTP 200 OK endpoint with authentication cookie
       │
-[5] MainWindowController: Buka NSWindow utama
+[5] MainWindowController: Displays primary NSWindow
       │
-[6] WebViewController: Buat WKWebView & loadRequest(http://127.0.0.1:3080)
+[6] WebViewController: Loads WKWebView request (http://127.0.0.1:3080)
       │
-[7] User Script: Injeksi bridge window.dshNative & window.dshDesktop
+[7] User Script: Injects window.dshNative & window.dshDesktop bridges
       │
-[8] App Siap Digunakan (Interaksi Chat & Workbench)
+[8] Application Ready for Interactive Chat & Tool Workflows
 ```
 
 ---
 
-## 5. Pertimbangan Performa & Footprint Memori
-- **Binary Size:** < 500 KB (dibandingkan bundle Electron yang berukuran > 150 MB).
-- **RAM Overhead:** Shell native Swift mengonsumsi < 25 MB RAM di luar engine WebKit webview bawaan macOS.
-- **Kompilasi Universal:** Menggunakan arsitektur Mach-O Universal 2 (`x86_64` untuk Intel dan `arm64` untuk Apple Silicon) sehingga berjalan optimal tanpa layer emulasi Rosetta 2 di Apple Silicon.
+## 5. Performance & Memory Profile
+- **Binary Footprint:** < 500 KB executable bundle (versus 150+ MB Electron distributions).
+- **RAM Overhead:** Native Swift shell consumes < 25 MB RAM outside macOS WebKit shared engine resources.
+- **Universal Binary:** Compiled for Mach-O Universal 2 (`x86_64` for Intel and `arm64` for Apple Silicon) with zero Rosetta 2 emulation overhead.

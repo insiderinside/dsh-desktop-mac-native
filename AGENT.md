@@ -1,46 +1,46 @@
-# AGENT.md — Instruksi Kerja Agent (dsh-desktop-macos)
+# AGENT.md — Agent Operational Instructions (dsh-desktop-macos)
 
-Panduan operasional agent untuk proyek **DSH Desktop macOS** (`/Users/promac/Projects/dsh-desktop-macos`).
-
----
-
-## 1. Peran & Nilai Inti (Lazy Senior Developer)
-- **Kenyamanan & Stabilitas Host Nomor Satu:** Dilarang mematikan atau membunuh proses `DSHDesktop` / Node secara membabi-buta saat user sedang aktif menggunakannya untuk percakapan.
-- **Shortest Working Diff:** Selesaikan masalah dengan kode paling ringkas dan tepat sasaran. Jangan menambahkan layer abstraksi atau boilerplate yang tidak diminta.
-- **Fail Fast & Test Early:** Uji perubahan langsung melalui build script atau unit check (`./scripts/build-intel.sh` atau SPM check) sebelum melaporkan hasil.
-- **Semua Respon Wajib Bahasa Indonesia:** Memenuhi aturan global `~/.dsh/AGENTS.md`.
+Operational guidelines for AI agents working on the **DSH Desktop macOS** project repository (`/Users/promac/Projects/dsh-desktop-macos`).
 
 ---
 
-## 2. Struktur Proyek & Tanggung Jawab Modul
-- `Package.swift`: Multi-target SPM (Swift 6.0, macOS 13+).
-  - Target `DSHDesktopCore`: Logika supervisor proses, port probe, auth signer, health checker, notification manager, plugin log store.
-  - Target `DSHDesktopUI`: `WebViewController` (WKWebView container & JavaScript message handler bridge), `MainWindowController`, `MenuBarController`, `PluginLogWindowController`.
-  - Target `DSHDesktop`: Executable utama (`main.swift`, `AppDelegate.swift`).
-  - Target `DSHDesktopCheck`: Executable self-check / diagnostic.
+## 1. Role & Core Philosophy (Lazy Senior Developer)
+- **Host Stability First:** Never kill or terminate running `DSHDesktop` or background Node processes blindly while the user is actively engaged in a conversation session.
+- **Shortest Working Diff:** Solve issues with minimal, precise, and idiomatic code changes. Never introduce unrequested layers of abstraction or speculative boilerplate.
+- **Fail Fast & Test Early:** Verify changes directly via build scripts or SPM test targets (`./scripts/build-intel.sh` or `swift run DSHDesktopCheck`) before declaring task completion.
+- **Communication Language:** Respect the global workspace interaction protocol (`~/.dsh/AGENTS.md`).
+
+---
+
+## 2. Project Architecture & Module Ownership
+- `Package.swift`: Multi-target SPM manifest (Swift 6.0, macOS 13+).
+  - `DSHDesktopCore`: Process supervision, port probe, authentication cookie signer, HTTP health check, notification management, and in-memory log buffer.
+  - `DSHDesktopUI`: `WebViewController` (WKWebView container & JS message handler bridge), `MainWindowController`, `MenuBarController`, `PluginLogWindowController`.
+  - `DSHDesktop`: Main executable target (`main.swift`, `AppDelegate.swift`).
+  - `DSHDesktopCheck`: Diagnostic CLI self-check suite.
 - `Resources/`: `Info.plist`, `AppIcon.icns`.
 - `scripts/`:
-  - `build-intel.sh`: Build release untuk x86_64 Intel Mac ke `dist/DSHDesktop.app`.
-  - `build-universal.sh`: Kompilasi Universal 2 (`lipo`) untuk Intel + Apple Silicon.
-  - `package-dmg.sh`: Membungkus bundle ke file `.dmg`.
+  - `build-intel.sh`: Release build for x86_64 Intel Macs outputting to `dist/DSHDesktop.app`.
+  - `build-universal.sh`: Universal 2 (`lipo`) compilation for Intel and Apple Silicon architectures.
+  - `package-dmg.sh`: Disk image packager creating `DeepSeek Harness.dmg`.
 
 ---
 
-## 3. Aturan & Batasan Penting (Gotchas & Anti-Patterns)
-1. **Jangan Bunuh Aplikasi yang Sedang Digunakan User:**
-   - User menjalankan percakapan chat melalui `DSHDesktop` atau browser. `pkill` sembarangan akan memutuskan sesi secara kasar.
-   - Jika butuh reload kode frontend/plugin, prioritaskan petunjuk refresh UI (`Cmd + R`) atau verifikasi terisolasi.
-2. **WebKit Cache Awareness:**
-   - WKWebView menyimpan disk cache di `~/Library/Caches/dev.dsh.desktop`.
-   - `WebViewController.swift` telah dipasang kebijakan `.reloadIgnoringLocalCacheData` dan purge disk/memory cache pada `reloadPage()`. Jangan kembalikan ke `.useProtocolCachePolicy` polos.
-3. **Pemisahan Host vs Plugin Runtime:**
-   - DSH Desktop host berjalan pada `0.2.0-rc.2`.
-   - Modul di `~/.dsh/profiles/node_modules/@deepseek-ai/*` mungkin merujuk ke symlink yang berbeda. Sadari perbedaan versi sebelum mendiagnosa error plugin pihak ketiga.
-4. **Verifikasi Build:**
-   - Selalu jalankan `./scripts/build-intel.sh` setelah memodifikasi file `.swift`. Pastikan status exit code 0 (`Build complete!`).
+## 3. Important Gotchas & Anti-Patterns
+1. **Never Kill Active Interactive Processes:**
+   - The user operates conversations through `DSHDesktop` or a browser session. Blindly invoking `pkill` will drop active user sessions abruptly.
+   - For frontend or plugin updates, instruct users to reload (`Cmd + R`) or run isolated smoke tests.
+2. **WebKit Cache Behavior:**
+   - WKWebView caches disk artifacts under `~/Library/Caches/dev.dsh.desktop`.
+   - `WebViewController.swift` employs `.reloadIgnoringLocalCacheData` and clears disk/memory caches during explicit reload events without wiping session cookies or local storage.
+3. **Host vs Plugin Runtime Version Boundaries:**
+   - The DSH Desktop host operates on version `0.2.0-rc.2`.
+   - Packages located under `~/.dsh/profiles/node_modules/@deepseek-ai/*` may reference differing runtime targets. Maintain awareness of version shims.
+4. **Build Verification Standard:**
+   - Always run `swift run DSHDesktopCheck` or `./scripts/build-intel.sh` after updating `.swift` source files. Ensure clean exit status 0.
 
 ---
 
-## 4. Siklus Memori (ICM & Agent Notes)
-- Simpan keputusan teknis dan penyelesaian bug ke ICM (`icm --db /tmp/icm-mirror.db --no-embeddings store`).
-- Selalu cantumkan blok `## Verdict` di akhir setiap respon.
+## 4. Memory & Logging
+- Store durable architectural findings or bug fixes in ICM when appropriate.
+- Always append the structured completion block at the end of each response.

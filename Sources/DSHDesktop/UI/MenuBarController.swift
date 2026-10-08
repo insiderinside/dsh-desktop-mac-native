@@ -1,6 +1,6 @@
 import Cocoa
 
-/// Status item di macOS menu bar untuk toggle jendela dan keluar dari aplikasi.
+/// Status bar item controller in macOS menu bar for window toggle, profile switching, and app management.
 @MainActor
 public final class MenuBarController: NSObject {
     private var statusItem: NSStatusItem?
@@ -16,21 +16,21 @@ public final class MenuBarController: NSObject {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
             button.title = "● DSH"
-            button.toolTip = "DeepSeek Harness Desktop (Port 3080: Aktif)"
+            button.toolTip = "DeepSeek Harness Desktop (Port 3080: Active)"
         }
 
         let menu = NSMenu()
         
-        // Header Status
-        let statusHeader = NSMenuItem(title: "Status: Aktif (Port 3080)", action: nil, keyEquivalent: "")
+        // Status header
+        let statusHeader = NSMenuItem(title: "Status: Active (Port 3080)", action: nil, keyEquivalent: "")
         statusHeader.isEnabled = false
         menu.addItem(statusHeader)
         menu.addItem(NSMenuItem.separator())
 
-        menu.addItem(NSMenuItem(title: "Tampilkan / Sembunyikan Jendela", action: #selector(toggleWindow), keyEquivalent: "d"))
+        menu.addItem(NSMenuItem(title: "Toggle Window Visibility", action: #selector(toggleWindow), keyEquivalent: "d"))
         
-        // Submenu: Beralih Profil (Fase 9)
-        let profileMenuItem = NSMenuItem(title: "Profil Aktif: webplugins", action: nil, keyEquivalent: "")
+        // Submenu: Switch Profile
+        let profileMenuItem = NSMenuItem(title: "Active Profile: webplugins", action: nil, keyEquivalent: "")
         let profileSubmenu = NSMenu()
         let availableProfiles = detectAvailableProfiles()
         for prof in availableProfiles {
@@ -45,11 +45,11 @@ public final class MenuBarController: NSObject {
         menu.addItem(profileMenuItem)
 
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Inspeksi Log Plugin & JS Error", action: #selector(openLogInspector), keyEquivalent: "l"))
-        menu.addItem(NSMenuItem(title: "Buka Terminal Proyek", action: #selector(openTerminal), keyEquivalent: "t"))
-        menu.addItem(NSMenuItem(title: "Buka di Finder", action: #selector(revealInFinder), keyEquivalent: "f"))
+        menu.addItem(NSMenuItem(title: "Plugin & JS Log Inspector", action: #selector(openLogInspector), keyEquivalent: "l"))
+        menu.addItem(NSMenuItem(title: "Open Workspace in Terminal", action: #selector(openTerminal), keyEquivalent: "t"))
+        menu.addItem(NSMenuItem(title: "Reveal Workspace in Finder", action: #selector(revealInFinder), keyEquivalent: "f"))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Keluar", action: #selector(quitApp), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quitApp), keyEquivalent: "q"))
 
         for menuItem in menu.items {
             if menuItem.action != nil {
@@ -73,8 +73,8 @@ public final class MenuBarController: NSObject {
     @objc private func selectProfile(_ sender: NSMenuItem) {
         let selectedProfile = sender.title
         let alert = NSAlert()
-        alert.messageText = "Beralih ke Profil: \(selectedProfile)"
-        alert.informativeText = "Profil '\(selectedProfile)' dipilih. Untuk sesi backend saat ini sedang aktif di port 3080 dengan profil webplugins."
+        alert.messageText = "Switch Profile: \(selectedProfile)"
+        alert.informativeText = "Profile '\(selectedProfile)' selected. The active backend session is running on port 3080 with webplugins profile."
         alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
         alert.runModal()

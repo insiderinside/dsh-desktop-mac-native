@@ -1,6 +1,6 @@
 import Foundation
 
-/// Konfigurasi runtime untuk aplikasi DSHDesktop.
+/// Runtime configuration for the DSHDesktop application.
 public struct AppConfig: Sendable {
     public let defaultPort: UInt16
     public let host: String

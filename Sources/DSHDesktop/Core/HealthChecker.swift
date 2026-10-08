@@ -1,10 +1,10 @@
 import Foundation
 
-/// Helper untuk memastikan server HTTP lokal benar-benar merespons 200 OK
-/// dan endpoint WebSocket / Remote siap sebelum UI dibuka.
+/// Helper to ensure the local HTTP server responds with 200 OK
+/// and WebSocket endpoints are ready before the UI is rendered.
 public struct HealthChecker: Sendable {
-    /// Melakukan polling HTTP GET request hingga status code 200 OK diterima
-    /// dan rute internal stabil atau batas waktu tercapai.
+    /// Polls HTTP GET requests until status code 200 OK is returned
+    /// and internal routes stabilize, or timeout is reached.
     public static func waitForHealthy(
         url: URL,
         cookieHeader: String? = nil,
@@ -22,12 +22,12 @@ public struct HealthChecker: Sendable {
             do {
                 let (_, response) = try await URLSession.shared.data(for: request)
                 if let httpResp = response as? HTTPURLResponse, (200...299).contains(httpResp.statusCode) {
-                    // Beri jeda stabilisasi (grace period) 1 detik agar engine WebSocket Node.js siap menerima koneksi client
+                    // Stabilization grace period: 1 second for WebSocket engine to accept client connections
                     try? await Task.sleep(nanoseconds: 1_000_000_000)
                     return true
                 }
             } catch {
-                // Server belum siap atau connection refused
+                // Server not ready yet or connection refused
             }
 
             try? await Task.sleep(nanoseconds: UInt64(intervalSeconds * 1_000_000_000))

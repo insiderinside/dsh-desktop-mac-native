@@ -1,6 +1,6 @@
 import Foundation
 
-/// Mengelola lifecycle proses backend `dsh web` (start, status monitor, clean SIGTERM shutdown).
+/// Supervises the lifecycle of the `dsh web` backend process (start, status monitoring, clean SIGTERM shutdown).
 public actor DshProcessSupervisor {
     public enum State: Sendable, Equatable {
         case stopped
@@ -14,20 +14,20 @@ public actor DshProcessSupervisor {
 
     public init() {}
 
-    /// Memulai child process `dsh web` jika server belum aktif.
+    /// Starts child process `dsh web` if server is not already active.
     /// - Parameters:
-    ///   - dshBinary: URL path ke executable binary `dsh`
-    ///   - port: Port target (default 3080)
-    /// - Returns: State proses setelah inisiasi
+    ///   - dshBinary: URL path to the `dsh` executable binary
+    ///   - port: Target port (default 3080)
+    /// - Returns: Process state after initiation
     public func start(dshBinary: URL, port: UInt16 = 3080) async -> State {
         guard case .stopped = state else {
             return state
         }
 
-        // ponytail: Cek apakah port sudah aktif di luar; jika ya, tidak perlu spawn process baru.
+        // ponytail: check if port is already open externally; if so, skip spawning a new process.
         let isAlreadyOpen = await PortProbe.probe(port: port, timeoutSeconds: 0.5) == .open
         if isAlreadyOpen {
-            state = .running(pid: -1) // -1 menandakan instance eksternal yang sudah running
+            state = .running(pid: -1) // -1 denotes pre-existing external instance
             return state
         }
 
@@ -36,7 +36,7 @@ public actor DshProcessSupervisor {
         proc.executableURL = dshBinary
         proc.arguments = ["web", "--port", String(port), "--no-open"]
 
-        // Setup pipe untuk stderr/stdout agar tidak blocking buffer terminal
+        // Setup pipe for stdout/stderr to avoid terminal buffer blocking
         let pipe = Pipe()
         proc.standardOutput = pipe
         proc.standardError = pipe
@@ -55,7 +55,7 @@ public actor DshProcessSupervisor {
 
             return state
         } catch {
-            let msg = "Gagal menjalankan dsh web: \(error.localizedDescription)"
+            let msg = "Failed to launch dsh web: \(error.localizedDescription)"
             self.state = .failed(msg)
             return state
         }
@@ -66,7 +66,7 @@ public actor DshProcessSupervisor {
         self.state = .stopped
     }
 
-    /// Menghentikan child process menggunakan SIGTERM secara bersih.
+    /// Stops child process gracefully via SIGTERM.
     public func stop() {
         guard let proc = process, proc.isRunning else {
             state = .stopped

@@ -1,7 +1,7 @@
 import Foundation
 import UserNotifications
 
-/// Mengelola notifikasi sistem native macOS menggunakan UserNotifications framework.
+/// Manages native macOS system notifications via the UserNotifications framework.
 public final class NotificationManager: @unchecked Sendable {
     public static let shared = NotificationManager()
 
@@ -9,16 +9,16 @@ public final class NotificationManager: @unchecked Sendable {
         requestAuthorization()
     }
 
-    /// Meminta izin notifikasi ke macOS
+    /// Requests notification permissions from macOS
     public func requestAuthorization() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             if let error = error {
-                print("[DSHDesktop] Gagal request izin notifikasi: \(error)")
+                print("[DSHDesktop] Failed to request notification authorization: \(error)")
             }
         }
     }
 
-    /// Mengirim notifikasi lokal ke Notification Center macOS
+    /// Dispatches a local banner notification to macOS Notification Center
     public func sendNotification(title: String, subtitle: String? = nil, body: String) {
         let content = UNMutableNotificationContent()
         content.title = title
@@ -33,7 +33,7 @@ public final class NotificationManager: @unchecked Sendable {
 
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("[DSHDesktop] Gagal mengirim notifikasi: \(error)")
+                print("[DSHDesktop] Failed to deliver notification: \(error)")
             }
         }
     }

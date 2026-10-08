@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${ROOT_DIR}"
 
-echo "[BUILD] Mengompilasi DSHDesktop untuk arsitektur lokal (x86_64 Intel Mac)..."
+echo "[BUILD] Compiling DSHDesktop for local architecture (x86_64 Intel Mac)..."
 swift build -c release --arch x86_64
 
 BIN_SRC="${ROOT_DIR}/.build/x86_64-apple-macosx/release/DSHDesktop"
@@ -24,6 +24,6 @@ if [ -f "${ROOT_DIR}/Resources/AppIcon.icns" ]; then
     cp "${ROOT_DIR}/Resources/AppIcon.icns" "${RESOURCES_DIR}/"
 fi
 
-echo "[VERIFIKASI] Memeriksa binary:"
+echo "[VERIFY] Checking compiled binary:"
 file "${MACOS_DIR}/DSHDesktop"
-echo "[SELESAI] Bundle siap di: ${APP_DIR}"
+echo "[DONE] Application bundle created at: ${APP_DIR}"

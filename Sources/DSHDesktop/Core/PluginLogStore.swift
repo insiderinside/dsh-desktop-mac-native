@@ -1,6 +1,6 @@
 import Foundation
 
-/// Model data untuk satu entri log plugin atau JavaScript
+/// Data model representing a single plugin or JavaScript log entry
 public struct PluginLogEntry: Identifiable, Sendable {
     public let id = UUID()
     public let timestamp: Date
@@ -40,7 +40,7 @@ public struct PluginLogEntry: Identifiable, Sendable {
     }
 }
 
-/// Centralized Logger untuk menangkap error plugin & JavaScript WebKit
+/// Centralized logger for intercepting WebKit and plugin errors/warnings
 @MainActor
 public final class PluginLogStore {
     public static let shared = PluginLogStore()

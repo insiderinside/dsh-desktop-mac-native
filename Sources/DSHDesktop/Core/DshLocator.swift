@@ -1,8 +1,8 @@
 import Foundation
 
-/// Mendeteksi lokasi binary executable `dsh` pada macOS.
+/// Locates the `dsh` executable binary on macOS.
 public struct DshLocator: Sendable {
-    /// Urutan direktori prioritas pencarian binary `dsh`
+    /// Priority search directory paths for the `dsh` binary
     public static let standardSearchPaths: [String] = {
         let home = NSHomeDirectory()
         return [
@@ -16,10 +16,10 @@ public struct DshLocator: Sendable {
         ]
     }()
 
-    /// Mencari executable `dsh` berdasarkan urutan path standar dan environment PATH.
+    /// Locates the `dsh` executable based on standard search paths and environment PATH.
     /// - Parameter fileManager: FileManager instance (default: .default)
-    /// - Parameter envPath: Nilai PATH string opsional (default: membaca ProcessInfo.processInfo.environment["PATH"])
-    /// - Returns: URL path absolut ke file executable `dsh` jika ditemukan, atau `nil`.
+    /// - Parameter envPath: Optional PATH string value (default: reads ProcessInfo.processInfo.environment["PATH"])
+    /// - Returns: Absolute URL path to the `dsh` executable if found, or `nil`.
     public static func locate(
         fileManager: FileManager = .default,
         envPath: String? = ProcessInfo.processInfo.environment["PATH"]
@@ -33,7 +33,7 @@ public struct DshLocator: Sendable {
             }
         }
 
-        // ponytail: pencarian statis list direktori sudah mencakup 99% instalasi homebrew, local pip/cargo, dan shell default.
+        // ponytail: static directory list check covers 99% of Homebrew, local pip/cargo, and default shell setups.
         for dir in candidatePaths {
             let fullPath = (dir as NSString).appendingPathComponent("dsh")
             if fileManager.isExecutableFile(atPath: fullPath) {

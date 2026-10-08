@@ -11,14 +11,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     public func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
 
-        // ponytail: Beri nama proses yang jelas di Activity Monitor macOS
+        // ponytail: Assign clear process name in macOS Activity Monitor
         ProcessInfo.processInfo.processName = "DeepSeek Harness Desktop"
 
-        // Inisialisasi izin notifikasi
+        // Initialize notification permissions
         NotificationManager.shared.requestAuthorization()
 
         Task { @MainActor in
-            // 1. Tampilkan Window terlebih dahulu dengan state loading
+            // 1. Present window immediately in initial loading state
             let webVC = WebViewController(targetURL: config.webURL)
             let winCtrl = MainWindowController(viewController: webVC)
             self.mainWindowController = winCtrl
@@ -30,7 +30,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             winCtrl.showWindow(nil)
             winCtrl.window?.makeKeyAndOrderFront(nil)
 
-            // Pastikan jika ini launch awal atau posisi tersimpan masih ukuran default kecil (width <= 800), langsung maksimalkan full width
+            // On fresh launch or default narrow window size (width <= 850), maximize window
             let hasSaved = UserDefaults.standard.string(forKey: "NSWindow Frame DSHMainWindowFrame") != nil
             if !hasSaved || (winCtrl.window?.frame.width ?? 0) <= 850 {
                 winCtrl.maximizeWindow()
@@ -38,7 +38,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
             NSApp.activate(ignoringOtherApps: true)
 
-            // 2. Mulai backend dan pastikan health check 200 OK (mencegah stuck/reconnecting)
+            // 2. Start backend and verify HTTP 200 OK health check (prevents reconnecting loop)
             await startBackendAndWarmup(webVC: webVC)
         }
     }
@@ -50,9 +50,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         // 1. App Menu
         let appMenuItem = NSMenuItem()
         let appMenu = NSMenu()
-        appMenu.addItem(NSMenuItem(title: "Tentang DeepSeek Harness", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""))
+        appMenu.addItem(NSMenuItem(title: "About DeepSeek Harness", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""))
         appMenu.addItem(NSMenuItem.separator())
-        appMenu.addItem(NSMenuItem(title: "Keluar DeepSeek Harness", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        appMenu.addItem(NSMenuItem(title: "Quit DeepSeek Harness", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         appMenuItem.submenu = appMenu
         mainMenu.addItem(appMenuItem)
 
@@ -73,24 +73,24 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let viewMenuItem = NSMenuItem()
         let viewMenu = NSMenu(title: "View")
 
-        let zoomInItem = NSMenuItem(title: "Perbesar (Zoom In)", action: #selector(WebViewController.zoomIn), keyEquivalent: "+")
+        let zoomInItem = NSMenuItem(title: "Zoom In", action: #selector(WebViewController.zoomIn), keyEquivalent: "+")
         zoomInItem.keyEquivalentModifierMask = .command
         zoomInItem.target = webVC
         viewMenu.addItem(zoomInItem)
 
-        let zoomOutItem = NSMenuItem(title: "Perkecil (Zoom Out)", action: #selector(WebViewController.zoomOut), keyEquivalent: "-")
+        let zoomOutItem = NSMenuItem(title: "Zoom Out", action: #selector(WebViewController.zoomOut), keyEquivalent: "-")
         zoomOutItem.keyEquivalentModifierMask = .command
         zoomOutItem.target = webVC
         viewMenu.addItem(zoomOutItem)
 
-        let actualSizeItem = NSMenuItem(title: "Ukuran Asli (Actual Size)", action: #selector(WebViewController.resetZoom), keyEquivalent: "0")
+        let actualSizeItem = NSMenuItem(title: "Actual Size", action: #selector(WebViewController.resetZoom), keyEquivalent: "0")
         actualSizeItem.keyEquivalentModifierMask = .command
         actualSizeItem.target = webVC
         viewMenu.addItem(actualSizeItem)
 
         viewMenu.addItem(NSMenuItem.separator())
 
-        let reloadItem = NSMenuItem(title: "Muat Ulang Halaman (Reload)", action: #selector(WebViewController.reloadPage), keyEquivalent: "r")
+        let reloadItem = NSMenuItem(title: "Reload Page", action: #selector(WebViewController.reloadPage), keyEquivalent: "r")
         reloadItem.keyEquivalentModifierMask = .command
         reloadItem.target = webVC
         viewMenu.addItem(reloadItem)
@@ -98,23 +98,23 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         viewMenuItem.submenu = viewMenu
         mainMenu.addItem(viewMenuItem)
 
-        // 4. Tools Menu (Buka Terminal, Reveal di Finder)
+        // 4. Tools Menu (Terminal, Finder, Plugin Logs)
         let toolsMenuItem = NSMenuItem()
         let toolsMenu = NSMenu(title: "Tools")
 
-        let terminalItem = NSMenuItem(title: "Buka Terminal di Direktori Proyek", action: #selector(openProjectTerminal), keyEquivalent: "t")
+        let terminalItem = NSMenuItem(title: "Open Workspace in Terminal", action: #selector(openProjectTerminal), keyEquivalent: "t")
         terminalItem.keyEquivalentModifierMask = [.command, .shift]
         terminalItem.target = self
         toolsMenu.addItem(terminalItem)
 
-        let finderItem = NSMenuItem(title: "Buka di Finder (Reveal in Finder)", action: #selector(openProjectFinder), keyEquivalent: "r")
+        let finderItem = NSMenuItem(title: "Reveal in Finder", action: #selector(openProjectFinder), keyEquivalent: "r")
         finderItem.keyEquivalentModifierMask = [.command, .shift]
         finderItem.target = self
         toolsMenu.addItem(finderItem)
 
         toolsMenu.addItem(NSMenuItem.separator())
 
-        let inspectorItem = NSMenuItem(title: "Inspeksi Log Plugin & JS Error", action: #selector(openPluginLogInspector), keyEquivalent: "l")
+        let inspectorItem = NSMenuItem(title: "Plugin & JS Log Inspector", action: #selector(openPluginLogInspector), keyEquivalent: "l")
         inspectorItem.keyEquivalentModifierMask = [.command, .shift]
         inspectorItem.target = self
         toolsMenu.addItem(inspectorItem)
@@ -126,7 +126,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let windowMenuItem = NSMenuItem()
         let windowMenu = NSMenu(title: "Window")
 
-        let newTabItem = NSMenuItem(title: "Jendela Baru (New Window)", action: #selector(openNewTab), keyEquivalent: "n")
+        let newTabItem = NSMenuItem(title: "New Window", action: #selector(openNewTab), keyEquivalent: "n")
         newTabItem.keyEquivalentModifierMask = .command
         newTabItem.target = self
         windowMenu.addItem(newTabItem)
@@ -143,7 +143,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     @objc private func openNewTab() {
-        // Buat jendela terpisah baru (Multi-Window) agar tidak menimpa header/tabbar internal web
+        // Create new standalone window to preserve internal web session tabs
         let newWebVC = WebViewController(targetURL: config.webURL)
         let newWinCtrl = MainWindowController(viewController: newWebVC)
         newWinCtrl.showWindow(nil)
@@ -228,14 +228,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 webVC.setupAuthAndLoad()
                 NotificationManager.shared.sendNotification(
                     title: "DeepSeek Harness",
-                    body: "Server lokal aktif dan siap digunakan."
+                    body: "Local server is active and ready."
                 )
             }
         } else {
             await MainActor.run {
                 NotificationManager.shared.sendNotification(
                     title: "DeepSeek Harness",
-                    body: "Peringatan: Server lokal belum siap merespons koneksi."
+                    body: "Warning: Local server is not responding."
                 )
             }
         }

@@ -1,7 +1,7 @@
 import Foundation
 import Network
 
-/// Mengecek status ketersediaan port TCP lokal secara non-blocking / async.
+/// Probes local TCP port availability in a non-blocking asynchronous manner.
 public struct PortProbe: Sendable {
     public enum ProbeResult: Sendable, Equatable {
         case open
@@ -10,11 +10,11 @@ public struct PortProbe: Sendable {
         case failed(String)
     }
 
-    /// Mengecek apakah port TCP lokal (`127.0.0.1` atau `host`) sedang listening.
+    /// Checks if a local TCP port (`127.0.0.1` or `host`) is actively listening.
     /// - Parameters:
-    ///   - port: Nomor port TCP (misal 3080 atau 43120)
-    ///   - host: Host tujuan (default: "127.0.0.1")
-    ///   - timeoutSeconds: Batas waktu koneksi dalam detik (default: 0.8)
+    ///   - port: TCP port number (e.g. 3080 or 43120)
+    ///   - host: Destination host (default: "127.0.0.1")
+    ///   - timeoutSeconds: Connection timeout in seconds (default: 0.8)
     /// - Returns: `ProbeResult`
     public static func probe(
         port: UInt16,
@@ -78,13 +78,13 @@ public struct PortProbe: Sendable {
         }
     }
 
-    /// Polling berkala hingga port terbuka atau batas total percobaan tercapai.
+    /// Periodically polls until the port is open or maximum attempts are reached.
     /// - Parameters:
-    ///   - port: Nomor port TCP target
+    ///   - port: Target TCP port number
     ///   - host: Target host (default 127.0.0.1)
-    ///   - maxAttempts: Total iterasi pengecekan
-    ///   - intervalSeconds: Jeda antar percobaan dalam detik
-    /// - Returns: `true` jika port terbuka sebelum batas percobaan, `false` jika tidak.
+    ///   - maxAttempts: Total check attempts
+    ///   - intervalSeconds: Delay between attempts in seconds
+    /// - Returns: `true` if port opened before limit, `false` otherwise.
     public static func waitForPort(
         port: UInt16,
         host: String = "127.0.0.1",

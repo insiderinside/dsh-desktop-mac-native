@@ -2,7 +2,7 @@ import Cocoa
 import WebKit
 import DSHDesktopCore
 
-/// Controller untuk menampung WKWebView, file upload panel handler, dan tampilan loading status.
+/// Controller managing WKWebView, file upload panel handler, and loading indicators.
 public final class WebViewController: NSViewController, WKNavigationDelegate, WKUIDelegate {
     private static let zoomDefaultsKey = "DSHWebViewPageZoom"
 
@@ -22,7 +22,7 @@ public final class WebViewController: NSViewController, WKNavigationDelegate, WK
     public override func loadView() {
         let root = NSView()
         root.wantsLayer = true
-        root.layer?.backgroundColor = NSColor(red: 0.08, green: 0.08, blue: 0.09, alpha: 1.0).cgColor // Dark mode background agar tidak blank putih
+        root.layer?.backgroundColor = NSColor(red: 0.08, green: 0.08, blue: 0.09, alpha: 1.0).cgColor // Dark background to prevent white flash
         self.view = root
 
         let config = WKWebViewConfiguration()
@@ -43,7 +43,7 @@ public final class WebViewController: NSViewController, WKNavigationDelegate, WK
             var observer = new MutationObserver(function() { disableSpell(); });
             observer.observe(document.documentElement, { childList: true, subtree: true });
 
-            // Native bridge helper di window
+            // Native bridge helpers on window
             window.dshNative = {
                 openTerminal: function(path) {
                     window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openTerminal &&
@@ -64,7 +64,7 @@ public final class WebViewController: NSViewController, WKNavigationDelegate, WK
                 }
             };
 
-            // Interseptor error JavaScript & Plugin untuk debugging
+            // JavaScript & plugin error interceptor for centralized debugging
             function forwardLog(level, message, source, line, col) {
                 try {
                     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.pluginLog) {
@@ -79,21 +79,21 @@ public final class WebViewController: NSViewController, WKNavigationDelegate, WK
                 } catch(e) {}
             }
 
-            // Tangkap window.onerror
+            // Capture window.onerror
             window.addEventListener('error', function(e) {
                 var src = e.filename || "unknown";
                 var msg = e.message || (e.error ? e.error.message : "Uncaught Error");
                 forwardLog("ERROR", msg, src, e.lineno, e.colno);
             });
 
-            // Tangkap unhandledrejection (Promise error pada async plugin)
+            // Capture unhandledrejection (Promise error on async plugins)
             window.addEventListener('unhandledrejection', function(e) {
                 var reason = e.reason;
                 var msg = reason ? (reason.stack || reason.message || String(reason)) : "Unhandled Promise Rejection";
                 forwardLog("ERROR", msg, "Promise");
             });
 
-            // Intersep console.error dan console.warn
+            // Intercept console.error and console.warn
             var origError = console.error;
             console.error = function() {
                 var args = Array.prototype.slice.call(arguments);
@@ -120,7 +120,7 @@ public final class WebViewController: NSViewController, WKNavigationDelegate, WK
         wv.navigationDelegate = self
         wv.uiDelegate = self
 
-        // Restore zoom preference, atau default ke 0.9 (zoom out 90%)
+        // Restore zoom preference, or default to 0.9 (zoom out 90%)
         let savedZoom = UserDefaults.standard.double(forKey: WebViewController.zoomDefaultsKey)
         wv.pageZoom = savedZoom > 0 ? savedZoom : 0.9
 
@@ -152,7 +152,7 @@ public final class WebViewController: NSViewController, WKNavigationDelegate, WK
         setupAuthAndLoad()
     }
 
-    /// Menyiapkan cookie autentikasi ke WKHTTPCookieStore sebelum memuat halaman
+    /// Prepares authentication cookie in WKHTTPCookieStore before page load
     public func setupAuthAndLoad() {
         progressIndicator.isHidden = false
         progressIndicator.startAnimation(nil)

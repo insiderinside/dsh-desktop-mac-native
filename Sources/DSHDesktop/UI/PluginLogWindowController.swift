@@ -1,13 +1,13 @@
 import Cocoa
 import DSHDesktopCore
 
-/// Window controller untuk menampilkan log live plugin & JavaScript error
+/// Window controller for displaying live plugin and JavaScript error logs
 @MainActor
 public final class PluginLogWindowController: NSWindowController {
     public static let shared = PluginLogWindowController()
 
     private let textView = NSTextView()
-    private let statusLabel = NSTextField(labelWithString: "Memantau log plugin & JavaScript...")
+    private let statusLabel = NSTextField(labelWithString: "Monitoring plugin & JavaScript logs...")
 
     public init() {
         let window = NSWindow(
@@ -21,13 +21,13 @@ public final class PluginLogWindowController: NSWindowController {
 
         let root = NSView(frame: NSRect(x: 0, y: 0, width: 850, height: 500))
 
-        // Toolbar baris atas: Tombol Bersihkan & Label
+        // Top toolbar: Clear button & status label
         let toolbar = NSStackView()
         toolbar.orientation = .horizontal
         toolbar.spacing = 10
         toolbar.translatesAutoresizingMaskIntoConstraints = false
 
-        let clearButton = NSButton(title: "Bersihkan Log", target: nil, action: nil)
+        let clearButton = NSButton(title: "Clear Logs", target: nil, action: nil)
         clearButton.bezelStyle = .rounded
         statusLabel.font = NSFont.systemFont(ofSize: 11)
         statusLabel.textColor = .secondaryLabelColor
@@ -36,7 +36,7 @@ public final class PluginLogWindowController: NSWindowController {
         toolbar.addArrangedSubview(statusLabel)
         root.addSubview(toolbar)
 
-        // Text Scroll View untuk log
+        // Text Scroll View for logs
         let scrollView = NSScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.hasVerticalScroller = true
@@ -68,7 +68,7 @@ public final class PluginLogWindowController: NSWindowController {
         clearButton.target = self
         clearButton.action = #selector(clearLogs)
 
-        // Hubungkan ke PluginLogStore
+        // Connect to PluginLogStore
         refreshLogs()
         PluginLogStore.shared.onNewEntry = { [weak self] _ in
             self?.refreshLogs()
@@ -82,7 +82,7 @@ public final class PluginLogWindowController: NSWindowController {
     @objc private func clearLogs() {
         PluginLogStore.shared.clear()
         textView.string = ""
-        statusLabel.stringValue = "Log dibersihkan."
+        statusLabel.stringValue = "Logs cleared."
     }
 
     public func refreshLogs() {
@@ -93,7 +93,7 @@ public final class PluginLogWindowController: NSWindowController {
             textView.scrollRangeToVisible(NSRange(location: textStorage.length, length: 0))
         }
         let errorCount = entries.filter { $0.level == .error }.count
-        statusLabel.stringValue = "Total: \(entries.count) log | \(errorCount) Error"
+        statusLabel.stringValue = "Total: \(entries.count) logs | \(errorCount) Errors"
     }
 
     public func showInspector() {

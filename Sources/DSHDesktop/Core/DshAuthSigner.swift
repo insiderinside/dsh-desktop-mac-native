@@ -1,12 +1,12 @@
 import Foundation
 import CryptoKit
 
-/// Mengelola pembuatan authentication cookie untuk DSH Web Server
-/// sesuai spesifikasi signing di `@deepseek-ai/dsh-client-connection`.
+/// Manages authentication cookie generation for the DSH Web Server
+/// matching the signing specification in `@deepseek-ai/dsh-client-connection`.
 public struct DshAuthSigner: Sendable {
     public static let cookiePrefix = "dsh-auth-"
 
-    /// Base64URL encoding tanpa padding
+    /// Base64URL encoding without padding
     public static func encodeBase64Url(_ data: Data) -> String {
         data.base64EncodedString()
             .replacingOccurrences(of: "+", with: "-")
@@ -14,7 +14,7 @@ public struct DshAuthSigner: Sendable {
             .replacingOccurrences(of: "=", with: "")
     }
 
-    /// Base64URL decoding dengan auto padding
+    /// Base64URL decoding with automatic padding
     public static func decodeBase64Url(_ string: String) -> Data? {
         var base64 = string
             .replacingOccurrences(of: "-", with: "+")
@@ -26,14 +26,14 @@ public struct DshAuthSigner: Sendable {
         return Data(base64Encoded: base64)
     }
 
-    /// Menghitung nama cookie unik berdasarkan authority (`host:port`).
-    /// Formula upstream: `dsh-auth-` + base64url(SHA256(authority))
+    /// Computes unique cookie name based on authority (`host:port`).
+    /// Upstream formula: `dsh-auth-` + base64url(SHA256(authority))
     public static func cookieName(for authority: String) -> String {
         let hash = SHA256.hash(data: Data(authority.utf8))
         return cookiePrefix + encodeBase64Url(Data(hash))
     }
 
-    /// Membaca secret `client-connection/browser-session` dari `~/.dsh/.credentials.yaml`
+    /// Reads secret `client-connection/browser-session` from `~/.dsh/.credentials.yaml`
     public static func loadSecret(credentialsPath: String = ("~/.dsh/.credentials.yaml" as NSString).expandingTildeInPath) -> Data? {
         guard let content = try? String(contentsOfFile: credentialsPath, encoding: .utf8) else {
             return nil
@@ -57,7 +57,7 @@ public struct DshAuthSigner: Sendable {
         return nil
     }
 
-    /// Membuat nilai signed cookie yang valid untuk authority tertentu.
+    /// Creates valid signed cookie value for the given authority.
     /// Format: `v1.<bodyBase64Url>.<signatureBase64Url>`
     public static func generateSessionCookie(
         authority: String,

@@ -1,13 +1,13 @@
 import Cocoa
 import WebKit
 
-/// Window khusus yang mendeteksi double click pada titlebar/top drag region
-/// untuk melakukan toggle auto-maximize (full width & height pada visible screen).
+/// Custom window class that detects double clicks on the titlebar/drag region
+/// to toggle window maximization across the visible screen frame.
 public final class DSHWindow: NSWindow {
     public override func sendEvent(_ event: NSEvent) {
         if event.type == .leftMouseDown && event.clickCount == 2 {
             let loc = event.locationInWindow
-            // Top region (area drag / header navbar setinggi 50pt dari atas window)
+            // Top drag region (navbar area within 50pt from the top edge of the window)
             if loc.y >= (frame.height - 50) {
                 toggleMaximizeWidth()
                 return
@@ -23,18 +23,18 @@ public final class DSHWindow: NSWindow {
         let visibleFrame = screen.visibleFrame
 
         if let prev = previousFrame, frame.equalTo(visibleFrame) {
-            // Restore ke ukuran semula
+            // Restore previous window frame
             setFrame(prev, display: true, animate: true)
             previousFrame = nil
         } else {
-            // Simpan ukuran sebelum maximize
+            // Store frame before maximizing
             previousFrame = frame
             setFrame(visibleFrame, display: true, animate: true)
         }
     }
 }
 
-/// Window Controller utama dengan titlebar terintegrasi bergaya modern macOS.
+/// Primary window controller featuring integrated transparent modern macOS titlebar.
 public final class MainWindowController: NSWindowController, NSWindowDelegate {
     private static let frameAutosaveKey = "DSHMainWindowFrame"
 
@@ -52,7 +52,7 @@ public final class MainWindowController: NSWindowController, NSWindowDelegate {
         window.tabbingMode = .disallowed
         window.minSize = NSSize(width: 800, height: 600)
 
-        // ponytail: Jika user menginginkan saat buka pertama aplikasi langsung full width / maximized
+        // ponytail: Auto-maximize on fresh launch if no persistent frame exists
         let hasSavedFrame = UserDefaults.standard.string(forKey: "NSWindow Frame \(MainWindowController.frameAutosaveKey)") != nil
         if !hasSavedFrame, let screen = NSScreen.main {
             window.setFrame(screen.visibleFrame, display: true)
@@ -67,7 +67,7 @@ public final class MainWindowController: NSWindowController, NSWindowDelegate {
         window.delegate = self
     }
 
-    /// Memaksimalkan jendela ke seluruh lebar dan tinggi layar yang tersedia (visibleFrame)
+    /// Maximizes window to fill the entire visible frame of the active display
     public func maximizeWindow() {
         guard let win = self.window, let screen = win.screen ?? NSScreen.main else { return }
         win.setFrame(screen.visibleFrame, display: true, animate: false)

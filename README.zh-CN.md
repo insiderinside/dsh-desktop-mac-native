@@ -1,5 +1,7 @@
 # DeepSeek Harness Desktop for macOS (DSH Desktop)
 
+[![CI](https://github.com/insiderinside/dsh-desktop-mac-native/actions/workflows/ci.yml/badge.svg)](https://github.com/insiderinside/dsh-desktop-mac-native/actions/workflows/ci.yml)
+[![Release](https://github.com/insiderinside/dsh-desktop-mac-native/actions/workflows/release.yml/badge.svg)](https://github.com/insiderinside/dsh-desktop-mac-native/actions/workflows/release.yml)
 [![Platform](https://img.shields.io/badge/platform-macOS%2013.0%2B-lightgrey.svg?style=flat-square)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg?style=flat-square)](https://swift.org)
 [![Architecture](https://img.shields.io/badge/arch-Universal%202%20(Intel%20%2B%20Apple%20Silicon)-blue.svg?style=flat-square)](#从源码构建)

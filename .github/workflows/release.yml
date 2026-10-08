@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release Assets
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer || true
+          swift --version
+
+      - name: Run Sanity Diagnostics Target
+        run: |
+          swift run DSHDesktopCheck
+
+      - name: Build Universal 2 Binary & Application Bundle
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/build-universal.sh
+
+      - name: Package Distributable DMG
+        run: |
+          ./scripts/package-dmg.sh
+
+      - name: Archive Application Bundle Zip
+        run: |
+          cd dist
+          ditto -c -k --sequesterRsrc --keepParent DSHDesktop.app "DeepSeek-Harness-macOS-Universal.zip"
+          shasum -a 256 "DeepSeek Harness.dmg" > "checksums.txt"
+          shasum -a 256 "DeepSeek-Harness-macOS-Universal.zip" >> "checksums.txt"
+          cat checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/DeepSeek Harness.dmg
+            dist/DeepSeek-Harness-macOS-Universal.zip
+            dist/checksums.txt
+          generate_release_notes: true
+          draft: false
+          prerelease: false

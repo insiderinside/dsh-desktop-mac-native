@@ -34,7 +34,7 @@ Operational guidelines for AI agents working on the **DSH Desktop macOS** projec
    - WKWebView caches disk artifacts under `~/Library/Caches/dev.dsh.desktop`.
    - `WebViewController.swift` employs `.reloadIgnoringLocalCacheData` and clears disk/memory caches during explicit reload events without wiping session cookies or local storage.
 3. **Host vs Plugin Runtime Version Boundaries:**
-   - The DSH Desktop host operates on version `0.2.0-rc.2`.
+   - The DSH Desktop wrapper supports DeepSeek Harness upstream releases, including `v0.2.1-alpha.1` and `0.2.0-rc.2`.
    - Packages located under `~/.dsh/profiles/node_modules/@deepseek-ai/*` may reference differing runtime targets. Maintain awareness of version shims.
 4. **Build Verification Standard:**
    - Always run `swift run DSHDesktopCheck` or `./scripts/build-intel.sh` after updating `.swift` source files. Ensure clean exit status 0.

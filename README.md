@@ -36,7 +36,7 @@ Designed as an efficient macOS equivalent to Windows WinForms/WebView2 wrappers,
 
 - **Operating System**: macOS 13.0 (Ventura) or newer
 - **Architecture**: Apple Silicon (`arm64`) or Intel (`x86_64`)
-- **Backend Service**: `dsh` CLI installed and accessible locally (running on `http://127.0.0.1:3080`)
+- **Backend Service**: `dsh` CLI installed and accessible locally (running on `http://127.0.0.1:3080`, compatible with upstream `v0.2.1-alpha.1` / `0.2.0-rc.2`)
 
 ---
 

@@ -21,6 +21,18 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_16.0.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer || true
           swift --version
 
+      - name: Setup Mock DSH Binary for CI Environment
+        run: |
+          mkdir -p ~/.local/bin
+          echo '#!/bin/sh' > ~/.local/bin/dsh
+          echo 'exit 0' >> ~/.local/bin/dsh
+          chmod +x ~/.local/bin/dsh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+          # Start mock HTTP listener on 127.0.0.1:3080 in background for PortProbe check
+          python3 -m http.server 3080 --bind 127.0.0.1 &
+          sleep 1
+
       - name: Run Sanity Diagnostics Target
         run: |
           swift run DSHDesktopCheck
